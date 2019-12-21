@@ -984,11 +984,7 @@ new Vue({
           var anchor = [30, 30]
           break;
         case 7:
-          var form = '00';
-          if (quest_pokemon_id === 327) {
-            form = '11';
-          }
-          var image = `${iconBasePath}/pokemon_icon_${String.prototype.padStart.call(quest_pokemon_id, 3, 0)}_${form}.png`;
+          var image = `${iconBasePath}/pokemon_icon_${String.prototype.padStart.call(quest_pokemon_id, 3, 0)}_00.png`;
           var size = [30, 30]
           var anchor = [30, 30]
           break;
@@ -1018,11 +1014,7 @@ new Vue({
           var rewardtext = `${quest_item_amount} ${quest_item_type}`;
           break;
         case 7:
-          var form = '00';
-          if (quest_pokemon_id === 327) {
-            form = '11';
-          }
-          var image = `${iconBasePath}/pokemon_icon_${String.prototype.padStart.call(quest_pokemon_id, 3, 0)}_${form}.png`;
+          var image = `${iconBasePath}/pokemon_icon_${String.prototype.padStart.call(quest_pokemon_id, 3, 0)}_00.png`;
           var rewardtext = quest_pokemon_name;
           var size = "150%";
           break;
@@ -1048,6 +1040,7 @@ new Vue({
     },
     build_quest_popup(marker) {
       var quest = this.quests[marker.options.id]
+      quest["url"] = quest["url"].replace('http://', 'https://');
       var base_popup = this.build_stop_base_popup(quest["pokestop_id"], quest["url"], quest["name"], quest["latitude"], quest["longitude"])
 
       return `
@@ -1194,14 +1187,7 @@ new Vue({
         var spawntiming = ""
       }
 
-      var last_scanned = moment(spawn["lastscan"])
-      var last_non_scanned = moment(spawn["lastnonscan"])
-
-      if (last_scanned.isBefore(last_non_scanned)) {
-        var last_mon = last_scanned
-      } else {
-        var last_mon = last_non_scanned
-      }
+      const lastMon = spawn["lastscan"] > spawn["lastnonscan"] ? spawn["lastscan"] : spawn["lastnonscan"]
 
       return `
         <div class="content">
@@ -1213,7 +1199,7 @@ new Vue({
          <br>
           <div cla ss="spawnContent">
             <div class="spawnFirstDetection"><i class="fas fa-baby"></i> First seen: <strong>${spawn["first_detection"]}</strong></div>
-            <div class="timestamp"><i class="fas fa-eye"></i> <abbr title="This is the time a mon has been seen on this spawnpoint.">Last mon seen</abbr>: <strong>${last_mon.format(timeformat)}</strong></div>
+            <div class="timestamp"><i class="fas fa-eye"></i> <abbr title="This is the time a mon has been seen on this spawnpoint.">Last mon seen</abbr>: <strong>${lastMon}</strong></div>
             <div class="timestamp"><i class="fa fa-clock"></i> <abbr title="The timestamp of the last time this spawnpoint's despawn time has been confirmed.">Last confirmation</abbr>: <strong>${spawn["lastscan"]}</strong></div>
             <div class="spawnType"><i class="fa fa-wrench"></i> Type: <strong>${type || "Unknown despawn time"}</strong></div>
             <div class="spawnTiming">${spawntiming}</div>

@@ -1,5 +1,5 @@
 ConfigArgParse~=0.14
-Flask-Caching~=1.7
+Flask-Caching~=1.8.0
 ImageHash~=4.0
 bitstring~=3.1
 dataclasses>=0.6
@@ -7,7 +7,7 @@ geopy~=1.20
 gevent~=1.4
 gpxdata~=1.2
 imutils~=0.5
-loguru~=0.3
+loguru~=0.4.0
 matplotlib~=3.1
 mysql-connector~=2.2
 mysqlclient~=1.4
