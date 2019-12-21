@@ -179,7 +179,7 @@ def questtask(typeid, condition, target):
     elif typeid == 10:
         text = _("Transfer {0} Pokemon")
     elif typeid == 11:
-        text = _("Favourite {0} Pokemon")
+        test = _("Favourite {0} Pokemon")
     elif typeid == 13:
         text = _('Use {0} {type}Berries to help catch Pokemon')
         arr['type'] = ""
@@ -303,15 +303,6 @@ def questtask(typeid, condition, target):
                         arr['type'] += (_('or ') if last == cur else '') + pokemonTypes[ty].title() + (
                             _('-type ') if last == cur else '-, ')
                         cur += 1
-    elif typeid == 29:
-        # QUEST_BATTLE_TEAM_ROCKET Team Go rucket grunt batles.
-        # Condition type 27 means against a grunt leader WITH_INVASION_CHARACTER
-        if re.search(r'"type": 27', condition) is not None:
-            text = _('Battle {0} times against the Team GO Rocket Leaders')
-
-        # Condition type 18 means win a battle
-        if re.search(r'"type": 18', condition) is not None:
-            text = text.replace(_('Battle'), _('Win {0} times against the Team GO Rocket Leaders'))
 
     if int(target) == int(1):
         text = text.replace(_(' Eggs'), _('n Egg'))

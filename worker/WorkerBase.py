@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from threading import Event, Lock, Thread, current_thread
 from typing import Optional
 
-from db.DbWrapper import DbWrapper
+from db.dbWrapperBase import DbWrapperBase
 from mitm_receiver.MitmMapper import MitmMapper
 from ocr.pogoWindows import PogoWindows
 from utils.MappingManager import MappingManager
@@ -29,7 +29,7 @@ Location = collections.namedtuple('Location', ['lat', 'lng'])
 
 class WorkerBase(ABC):
     def __init__(self, args, id, last_known_state, websocket_handler, mapping_manager: MappingManager,
-                 routemanager_name: str, db_wrapper: DbWrapper, pogoWindowManager: PogoWindows, NoOcr: bool = True,
+                 routemanager_name: str, db_wrapper: DbWrapperBase, pogoWindowManager: PogoWindows, NoOcr: bool = True,
                  walker=None):
         # self.thread_pool = ThreadPool(processes=2)
         self._mapping_manager: MappingManager = mapping_manager
@@ -124,7 +124,7 @@ class WorkerBase(ABC):
 
     def check_max_walkers_reached(self):
         walkermax = self._walker.get('walkermax', False)
-        if walkermax is False or (type(walkermax) is str and len(walkermax) == 0):
+        if not walkermax:
             return True
         reg_workers = self._mapping_manager.routemanager_get_registered_workers(self._routemanager_name)
         if int(reg_workers) > int(walkermax):
@@ -740,11 +740,6 @@ class WorkerBase(ABC):
             self._communicator.turnScreenOn()
             time.sleep(self.get_devicesettings_value("post_turn_screen_on_delay", 7))
 
-        # Disable vibration
-        # This only needs to be done once per boot
-        # So, we'll just do it when pogo actually needs starting
-        self._communicator.passthrough("su -c chmod 444 /sys/devices/virtual/timed_output/vibrator/enable")
-
         cur_time = time.time()
         start_result = False
         self._mitm_mapper.set_injection_status(self._id, False)
@@ -790,7 +785,7 @@ class WorkerBase(ABC):
             mitm_mapper.collect_location_stats(self._id, self.current_location, 1, time.time(), 3, 0,
                                                self._mapping_manager.routemanager_get_mode(self._routemanager_name),
                                                99)
-        self._db_wrapper.save_last_reboot(self._id)
+        self._db_wrapper.save_last_reboot(self._applicationArgs.status_name, self._id)
         self.stop_worker()
         return start_result
 
@@ -805,7 +800,7 @@ class WorkerBase(ABC):
 
     def _restart_pogo(self, clear_cache=True, mitm_mapper: Optional[MitmMapper] = None):
         successful_stop = self._stop_pogo()
-        self._db_wrapper.save_last_restart(self._id)
+        self._db_wrapper.save_last_restart(self._applicationArgs.status_name, self._id)
         logger.debug("restartPogo: stop game resulted in {}",
                      str(successful_stop))
         if successful_stop:

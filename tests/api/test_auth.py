@@ -9,11 +9,9 @@ class APIAuth(api_base.APITestBase):
 
     def test_landing_page(self):
         super().landing_page()
-        self.remove_resources()
 
     def test_invalid_uri(self):
         super().invalid_uri()
-        self.remove_resources()
 
     def test_invalid_post(self):
         payload = {
@@ -21,11 +19,9 @@ class APIAuth(api_base.APITestBase):
         }
         errors = {"missing": ["username", 'password']}
         super().invalid_post(payload, errors)
-        self.remove_resources()
 
     def test_valid_post(self):
         super().valid_post(self.base_payload, self.base_payload)
-        self.remove_resources()
 
     def test_invalid_put(self):
         payload = {
@@ -34,7 +30,6 @@ class APIAuth(api_base.APITestBase):
         }
         errors = {"missing": ["username"]}
         super().invalid_put(payload, errors)
-        self.remove_resources()
 
     def test_valid_put(self):
         payload = {
@@ -42,7 +37,6 @@ class APIAuth(api_base.APITestBase):
             'password': 'pass'
         }
         super().valid_put(payload, payload)
-        self.remove_resources()
 
     def test_invalid_patch(self):
         payload = {
@@ -51,7 +45,6 @@ class APIAuth(api_base.APITestBase):
         }
         errors = {"unknown": ["usernamez"]}
         super().invalid_patch(payload, errors)
-        self.remove_resources()
 
     def test_valid_patch(self):
         payload = {
@@ -59,5 +52,5 @@ class APIAuth(api_base.APITestBase):
         }
         result = copy.copy(self.base_payload)
         result.update(payload)
+        resp = self.create_valid(self.base_payload)
         self.valid_patch(payload, result)
-        self.remove_resources()

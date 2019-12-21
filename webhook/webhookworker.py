@@ -4,7 +4,6 @@ from typing import Optional, List
 
 import requests
 
-from db.DbWebhookReader import DbWebhookReader
 from geofence.geofenceHelper import GeofenceHelper
 from utils.MappingManager import MappingManager
 from utils.gamemechanicutil import calculate_mon_level, get_raid_boss_cp
@@ -18,12 +17,10 @@ class WebhookWorker:
     __IV_MON: List[int] = List[int]
     __excluded_areas = {}
 
-    def __init__(self, args, data_manager, mapping_manager: MappingManager, rarity, db_webhook_reader: DbWebhookReader):
+    def __init__(self, args, db_wrapper, mapping_manager: MappingManager, rarity):
         self.__worker_interval_sec = 10
         self.__args = args
-        self.__data_manager = data_manager
-        self.__db_wrapper = self.__data_manager.dbc
-        self._db_reader = db_webhook_reader
+        self.__db_wrapper = db_wrapper
         self.__rarity = rarity
         self.__last_check = int(time.time())
 
@@ -160,7 +157,7 @@ class WebhookWorker:
                 entire_payload = {"type": "quest", "message": quest_payload}
                 ret.append(entire_payload)
             except Exception as e:
-                logger.error(
+                logger.warning(
                     "Exception occured while generating quest webhook: {}", str(e)
                 )
 
@@ -555,42 +552,42 @@ class WebhookWorker:
         try:
             # raids
             raids = self.__prepare_raid_data(
-                self._db_reader.get_raids_changed_since(self.__last_check)
+                self.__db_wrapper.get_raids_changed_since(self.__last_check)
             )
             full_payload += raids
 
             # quests
             if self.__args.quest_webhook:
                 quest = self.__prepare_quest_data(
-                    self._db_reader.get_quests_changed_since(self.__last_check)
+                    self.__db_wrapper.quests_from_db(timestamp=self.__last_check)
                 )
                 full_payload += quest
 
             # weather
             if self.__args.weather_webhook:
                 weather = self.__prepare_weather_data(
-                    self._db_reader.get_weather_changed_since(self.__last_check)
+                    self.__db_wrapper.get_weather_changed_since(self.__last_check)
                 )
                 full_payload += weather
 
             # gyms
             if self.__args.gym_webhook:
                 gyms = self.__prepare_gyms_data(
-                    self._db_reader.get_gyms_changed_since(self.__last_check)
+                    self.__db_wrapper.get_gyms_changed_since(self.__last_check)
                 )
                 full_payload += gyms
 
             # stops
             if self.__args.pokestop_webhook:
                 pokestops = self.__prepare_stops_data(
-                    self._db_reader.get_stops_changed_since(self.__last_check)
+                    self.__db_wrapper.get_stops_changed_since(self.__last_check)
                 )
                 full_payload += pokestops
 
             # mon
             if self.__args.pokemon_webhook:
                 mon = self.__prepare_mon_data(
-                    self._db_reader.get_mon_changed_since(self.__last_check)
+                    self.__db_wrapper.get_mon_changed_since(self.__last_check)
                 )
                 full_payload += mon
         except Exception:

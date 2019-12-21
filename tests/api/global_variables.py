@@ -5,7 +5,7 @@ DEFAULT_OBJECTS = {
             "geofence_included": "test_geofence.txt",
             "including_stops": True,
             "init": False,
-            "name": "UnitTest Area - %s",
+            "name": "UnitTest Area",
             "routecalc": "test_routecalc",
             "settings": {
                 "starve_route": False
@@ -20,55 +20,40 @@ DEFAULT_OBJECTS = {
     'auth': {
         'uri': '/api/auth',
         'payload': {
-            'username': 'user - %s',
+            'username': 'user',
             'password': 'pass'
         }
     },
     'device': {
         'uri': '/api/device',
         'payload': {
-            'origin': 'UnitTest Device - %s',
+            'origin': 'UnitTest Device',
+            'walker': None, # This must be populated
             'settings': {
-                'screenshot_type': 'jpeg'
+                'screenshot_type': 'jpg'
             }
         }
     },
     'devicesetting': {
-        'uri': '/api/devicepool',
+        'uri': '/api/devicesetting',
         'payload': {
-            'devicepool': 'UnitTest Pool - %s',
+            'devicepool': 'UnitTest Pool',
             'settings': {
-                'screenshot_type': 'jpeg'
+                'screenshot_type': 'jpg'
             }
-        }
-    },
-    'geofence': {
-        'uri': '/api/geofence',
-        'payload': {
-            'name': 'UnitTest Geofence - %s',
-            'fence_type': 'polygon',
-            'fence_data': []
         }
     },
     'monivlist': {
         'uri': '/api/monivlist',
         'payload': {
-            'monlist': 'UnitTest MonIVList - %s',
+            'monlist': 'Test MonIV List',
             'mon_ids_iv': []
-        }
-    },
-    'routecalc': {
-        'uri': '/api/routecalc',
-        'payload': {
-            'routefile': [
-                '0,0'
-            ]
         }
     },
     'walker': {
         'uri': '/api/walker',
         'payload': {
-            'walkername': 'UnitTest Walker - %s',
+            'walkername': 'UnitTest Walker',
             'setup': [],
         }
     },
@@ -76,10 +61,9 @@ DEFAULT_OBJECTS = {
         'uri': '/api/walkerarea',
         'payload': {
             'walkerarea': 'UnitTest WalkerArea', # This must be populated with a valid area_uri
-            'walkertype': 'coords',
+            'walkertype': 'raids_mitm',
             'walkervalue': '',
-            'walkermax': '',
-            'walkertext': ''
+            'walkermax': ''
         }
     }
 }

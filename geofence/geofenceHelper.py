@@ -15,15 +15,16 @@ except ImportError:
 
 
 class GeofenceHelper:
-    def __init__(self, include_geofence, exclude_geofence):
+    def __init__(self, pathToIncludeGeofence, pathToExcludeGeofence):
         self.geofenced_areas = []
         self.excluded_areas = []
         self.use_matplotlib = 'matplotlib' in sys.modules
-        if include_geofence or exclude_geofence:
+
+        if pathToIncludeGeofence or pathToExcludeGeofence:
             self.geofenced_areas = self.parse_geofences_file(
-                include_geofence, excluded=False)
+                pathToIncludeGeofence, excluded=False)
             self.excluded_areas = self.parse_geofences_file(
-                exclude_geofence, excluded=True)
+                pathToExcludeGeofence, excluded=True)
             logger.debug2("Loaded {} geofenced and {} excluded areas.", len(
                 self.geofenced_areas), len(self.excluded_areas))
 
@@ -88,38 +89,39 @@ class GeofenceHelper:
         return self.geofenced_areas or self.excluded_areas
 
     @staticmethod
-    def parse_geofences_file(geo_resource, excluded):
+    def parse_geofences_file(geofence_file, excluded):
         geofences = []
         # Read coordinates of excluded areas from file.
-        if geo_resource:
-            lines = geo_resource['fence_data']
-            first_line = True
-            for line in geo_resource['fence_data']:
-                line = line.strip()
-                if len(line) == 0:  # Empty line.
-                    continue
-                elif line.startswith("["):  # Name line.
-                    name = line.replace("[", "").replace("]", "")
-                    geofences.append({
-                        'excluded': excluded,
-                        'name': name,
-                        'polygon': []
-                    })
-                    logger.debug('Found geofence: {}', name)
-                    first_line = False
-                else:  # Coordinate line.
-                    if first_line:
-                        # Geofence file with no name
+        if geofence_file:
+            with open(geofence_file) as f:
+                first_line = True
+                
+                for line in f:
+                    line = line.strip()
+                    if len(line) == 0:  # Empty line.
+                        continue
+                    elif line.startswith("["):  # Name line.
+                        name = line.replace("[", "").replace("]", "")
                         geofences.append({
                             'excluded': excluded,
-                            'name': 'unnamed',
+                            'name': name,
                             'polygon': []
                         })
-                        logger.debug('Found geofence with no name')
+                        logger.debug('Found geofence: {}', name)
                         first_line = False
-                    lat, lon = line.split(",")
-                    LatLon = {'lat': float(lat), 'lon': float(lon)}
-                    geofences[-1]['polygon'].append(LatLon)
+                    else:  # Coordinate line.
+                        if first_line:
+                            # Geofence file with no name
+                            geofences.append({
+                                'excluded': excluded,
+                                'name': 'unnamed',
+                                'polygon': []
+                            })
+                            logger.debug('Found geofence with no name')
+
+                        lat, lon = line.split(",")
+                        LatLon = {'lat': float(lat), 'lon': float(lon)}
+                        geofences[-1]['polygon'].append(LatLon)
 
         return geofences
 

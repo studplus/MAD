@@ -11,7 +11,6 @@ from utils.adb import ADBConnect
 from utils.MappingManager import MappingManager
 from utils.logging import logger
 import re
-import utils.data_manager
 
 cache = Cache(config={'CACHE_TYPE': 'simple'})
 
@@ -41,7 +40,6 @@ class config(object):
             ("/settings/areas", self.settings_areas),
             ("/settings/auth", self.settings_auth),
             ("/settings/devices", self.settings_devices),
-            ("/settings/geofence", self.settings_geofence),
             ("/settings/ivlists", self.settings_ivlists),
             ("/settings/monsearch", self.monsearch),
             ("/settings/shared", self.settings_pools),
@@ -103,22 +101,7 @@ class config(object):
         except TypeError:
             pass
         mode = request.args.get("mode", None)
-        if mode_required and mode is None:
-            try:
-                req = self._data_manager.get_resource(data_source, identifier=identifier)
-                mode = req.area_type
-            except:
-                if identifier:
-                    return redirect(redirect_uri, code=302)
-                else:
-                    pass
-        try:
-            settings_vars = self._data_manager.get_settings(subtab, mode=mode)
-        except (utils.data_manager.dm_exceptions.ModeNotSpecified, utils.data_manager.dm_exceptions.ModeUnknown):
-            if identifier:
-                raise
-            else:
-                settings_vars = {}
+        settings_vars = self.process_settings_vars(self._data_manager.get_api_attribute(subtab, 'configuration'), mode=mode)
         if request.method == 'GET':
             included_data = {
                 'advcfg': self._args.advanced_config,
@@ -126,9 +109,21 @@ class config(object):
                 'identifier': identifier
             }
             for key, data_section in required_data.items():
-                included_data[key] = self._data_manager.get_root_resource(data_section)
+                included_data[key] = self._data_manager.get_data(data_section)
             for key, val in passthrough.items():
                 included_data[key] = val
+            # Mode was required for this operation but was not present.  Return the base element
+            if mode_required and mode is None:
+                try:
+                    req = self._data_manager.get_data(data_source, identifier=identifier)
+                    element = req
+                    included_data[subtab] = element
+                    return render_template(html_all,
+                                           subtab=subtab,
+                                           **included_data
+                                           )
+                except:
+                    return redirect(redirect_uri, code=302)
             if identifier and identifier == 'new':
                 return render_template(html_single,
                                        uri=included_data['base_uri'],
@@ -138,10 +133,10 @@ class config(object):
                                        method='POST',
                                        settings_vars=settings_vars,
                                        **included_data)
+            req = self._data_manager.get_data(data_source, identifier=identifier)
+            element = req
+            included_data[subtab] = element
             if identifier is not None:
-                req = self._data_manager.get_resource(data_source, identifier=identifier)
-                element = req
-                included_data[subtab] = element
                 return render_template(html_single,
                                        uri='%s/%s' % (included_data['base_uri'], identifier),
                                        redirect=redirect_uri,
@@ -151,7 +146,6 @@ class config(object):
                                        settings_vars=settings_vars,
                                        **included_data)
             else:
-                included_data[subtab] = self._data_manager.get_root_resource(data_source)
                 return render_template(html_all,
                                        subtab=subtab,
                                        **included_data
@@ -167,13 +161,10 @@ class config(object):
     @auth_required
     def settings_areas(self):
         fences = {}
-        # geofence_file_path = self._args.geofence_file_path
-        # existing_fences = sorted(glob.glob(os.path.join(geofence_file_path, '*.txt')))
-        # for geofence_temp in existing_fences:
-        #     fences[geofence_temp] = os.path.basename(geofence_temp)
-        raw_fences = self._data_manager.get_root_resource('geofence')
-        for fence_id, fence_data in raw_fences.items():
-            fences[fence_id] = fence_data['name']
+        geofence_file_path = self._args.geofence_file_path
+        existing_fences = sorted(glob.glob(os.path.join(geofence_file_path, '*.txt')))
+        for geofence_temp in existing_fences:
+            fences[geofence_temp] = os.path.basename(geofence_temp)
         required_data = {
             'identifier': 'id',
             'base_uri': 'api_area',
@@ -183,8 +174,7 @@ class config(object):
             'html_all': 'settings_areas.html',
             'subtab': 'area',
             'required_data': {
-                'monlist': 'monivlist',
-                'fences': 'geofence'
+                'monlist': 'monivlist'
             },
             'passthrough': {
                 'fences': fences
@@ -220,22 +210,8 @@ class config(object):
             'subtab': 'device',
             'required_data': {
                 'walkers': 'walker',
-                'pools': 'devicepool'
+                'pools': 'devicesetting'
             },
-        }
-        return self.process_element(**required_data)
-
-    @logger.catch
-    @auth_required
-    def settings_geofence(self):
-        required_data = {
-            'identifier': 'id',
-            'base_uri': 'api_geofence',
-            'data_source': 'geofence',
-            'redirect': 'settings_geofence',
-            'html_single': 'settings_singlegeofence.html',
-            'html_all': 'settings_geofences.html',
-            'subtab': 'geofence',
         }
         return self.process_element(**required_data)
 
@@ -244,7 +220,7 @@ class config(object):
     def settings_ivlists(self):
         try:
             identifier = request.args.get('id')
-            current_mons = self._data_manager.get_resource('monivlist', identifier)['mon_ids_iv']
+            current_mons = self._data_manager.get_data('monivlist', identifier)['mon_ids_iv']
         except Exception as err:
             current_mons = []
         all_pokemon = self.get_pokemon()
@@ -275,12 +251,12 @@ class config(object):
     def settings_pools(self):
         required_data = {
             'identifier': 'id',
-            'base_uri': 'api_devicepool',
-            'data_source': 'devicepool',
+            'base_uri': 'api_devicesetting',
+            'data_source': 'devicesetting',
             'redirect': 'settings_pools',
             'html_single': 'settings_singlesharedsetting.html',
             'html_all': 'settings_sharedsettings.html',
-            'subtab': 'devicepool',
+            'subtab': 'devicesetting',
             'var_parser_section': 'devices',
             'required_data': {},
         }
@@ -314,12 +290,12 @@ class config(object):
         # Only pull this if its set.  When creating a new walkerarea it will be empty
         if walkerarea_id is not None:
             walkerarea_uri = '%s/%s' % (url_for('api_walkerarea'), walkerarea_id)
-            walkerareaconfig = self._data_manager.get_resource('walkerarea', identifier=walkerarea_id)
+            walkerareaconfig = self._data_manager.get_data('walkerarea', identifier=walkerarea_id)
         else:
             walkerarea_uri = url_for('api_walkerarea')
             walkerareaconfig = {}
-        walkerconfig = self._data_manager.get_resource('walker', identifier=walker_id)
-        areaconfig = self._data_manager.get_root_resource('area')
+        walkerconfig = self._data_manager.get_data('walker', identifier=walker_id)
+        areaconfig = self._data_manager.get_data('area')
         walkertypes = ['coords','countdown', 'idle', 'period', 'round', 'timer']
         mappings = {
             'uri': walkerarea_uri,
