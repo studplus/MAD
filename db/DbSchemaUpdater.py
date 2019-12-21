@@ -1,6 +1,7 @@
 import sys
 from utils.logging import logger
 from db.PooledQueryExecutor import PooledQueryExecutor
+from . import madmin_conversion
 
 class DbSchemaUpdater:
     """
@@ -185,9 +186,9 @@ class DbSchemaUpdater:
         },
         {
             "table": "trs_status",
-            "column": "instance",
-            "ctype": "VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL FIRST",
-            "modify_key": "DROP PRIMARY KEY, ADD PRIMARY KEY (`instance`, `origin`)"
+            "column": "instance_id",
+            "ctype": "int UNSIGNED NOT NULL FIRST",
+            "modify_key": "DROP PRIMARY KEY, ADD PRIMARY KEY (`instance_id`, `origin`)"
         }
     ]
 
@@ -291,6 +292,19 @@ class DbSchemaUpdater:
         )
         return int(self._db_exec.execute(query, vals)[0][0]) >= 1
 
+    def create_madmin_databases_if_not_exists(self):
+        logger.debug("DbWrapperBase::create_madmin_databases_if_not_exists called")
+        for table in madmin_conversion.TABLES:
+            self._db_exec.execute(table, commit=True)
+
+    def ensure_unversioned_madmin_columns_exist(self):
+        try:
+            for column_mod in madmin_conversion.COLUMNS:
+                self.check_create_column(column_mod)
+        except SchemaUpdateError as e:
+            column_mod = e.schema_mod
+            logger.error("Couldn't create required column {}.{}'", column_mod["table"], column_mod["column"])
+            sys.exit(1)
 
 class SchemaUpdateError(Exception):
 
